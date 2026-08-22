@@ -1,242 +1,180 @@
 import {
   Users,
-  GraduationCap,
   ClipboardCheck,
   TrendingUp,
-  TrendingDown,
+  AlertTriangle,
+  ArrowUpRight,
+  ArrowDownRight,
   Clock,
-  AlertCircle,
+  CalendarDays,
   CheckCircle2,
-  UserCheck,
-  School,
-  Download,
-  ArrowRight,
+  XCircle,
+  MinusCircle,
+  Activity,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
 const STATS = [
-  {
-    label: "Alumnos activos",
-    value: "486",
-    delta: "+12",
-    trend: "up",
-    icon: GraduationCap,
-    color: "sky",
-  },
-  {
-    label: "Docentes",
-    value: "34",
-    delta: "+2",
-    trend: "up",
-    icon: Users,
-    color: "cyan",
-  },
-  {
-    label: "Asistencia hoy",
-    value: "94,2%",
-    delta: "+1,8%",
-    trend: "up",
-    icon: ClipboardCheck,
-    color: "emerald",
-  },
-  {
-    label: "Llegadas tarde",
-    value: "23",
-    delta: "-5",
-    trend: "down",
-    icon: Clock,
-    color: "amber",
-  },
+  { label: "Alumnos activos", value: "342", change: "+12", up: true, icon: Users, color: "from-[var(--accent)] to-[var(--accent-dark)]" },
+  { label: "Asistencia hoy", value: "87%", change: "+3%", up: true, icon: ClipboardCheck, color: "from-[var(--accent)] to-[var(--accent-dark)]" },
+  { label: "Promedio general", value: "7.4", change: "+0.2", up: true, icon: TrendingUp, color: "from-[var(--accent)] to-[var(--accent-dark)]" },
+  { label: "Inasistencias", value: "23", change: "-5", up: false, icon: AlertTriangle, color: "from-[var(--accent)] to-[var(--accent-dark)]" },
 ];
 
-const WEEK = [
-  { d: "Lun", pct: 92 },
-  { d: "Mar", pct: 95 },
-  { d: "Mié", pct: 88 },
-  { d: "Jue", pct: 94 },
-  { d: "Vie", pct: 91 },
-  { d: "Sáb", pct: 78 },
+const RECENT_ACTIVITY = [
+  { time: "08:15", action: "Entrada registrada", who: "Juan Pérez (5°A)", type: "success" },
+  { time: "08:18", action: "Entrada registrada", who: "María López (3°B)", type: "success" },
+  { time: "08:22", action: "Tardanza", who: "Carlos García (4°A)", type: "warning" },
+  { time: "08:30", action: "Inasistencia justificada", who: "Ana Martínez (5°B)", type: "info" },
+  { time: "08:45", action: "Entrada registrada", who: "Pedro Ruiz (3°A)", type: "success" },
+  { time: "09:00", action: "Tardanza", who: "Laura Díaz (4°B)", type: "warning" },
+  { time: "09:15", action: "Inasistencia injustificada", who: "Diego Fernández (5°A)", type: "error" },
+  { time: "09:30", action: "Entrada registrada", who: "Sofía Torres (3°B)", type: "success" },
 ];
 
-const COURSES = [
-  { curso: "1ro A", presentes: 28, ausentes: 2, tarde: 1, total: 31 },
-  { curso: "1ro B", presentes: 29, ausentes: 1, tarde: 0, total: 30 },
-  { curso: "3ro A", presentes: 25, ausentes: 4, tarde: 2, total: 31 },
-  { curso: "4to A", presentes: 27, ausentes: 1, tarde: 3, total: 31 },
-  { curso: "5to A", presentes: 26, ausentes: 2, tarde: 1, total: 29 },
-  { curso: "6to A", presentes: 24, ausentes: 3, tarde: 0, total: 27 },
+const WEEKLY = [
+  { day: "Lun", presentes: 312, ausentes: 30 },
+  { day: "Mar", presentes: 298, ausentes: 44 },
+  { day: "Mié", presentes: 325, ausentes: 17 },
+  { day: "Jue", presentes: 308, ausentes: 34 },
+  { day: "Vie", presentes: 318, ausentes: 24 },
 ];
 
-const ACTIVITY = [
-  { icon: UserCheck, color: "emerald", text: "María González validó su cuenta", time: "Hace 5 min" },
-  { icon: AlertCircle, color: "amber", text: "3 alumnos llegaron tarde en 4to A", time: "Hace 22 min" },
-  { icon: CheckCircle2, color: "sky", text: "Asistencia de 1ro A registrada", time: "Hace 1 h" },
-  { icon: UserCheck, color: "emerald", text: "Prof. Pérez completó su registro", time: "Hace 2 h" },
-  { icon: AlertCircle, color: "rose", text: "Ausencias múltiples en 3ro A", time: "Hace 3 h" },
+const CLASSES = [
+  { name: "5°A", asistencia: 92, alumnos: 36 },
+  { name: "5°B", asistencia: 88, alumnos: 34 },
+  { name: "4°A", asistencia: 85, alumnos: 38 },
+  { name: "4°B", asistencia: 91, alumnos: 35 },
+  { name: "3°A", asistencia: 94, alumnos: 40 },
+  { name: "3°B", asistencia: 89, alumnos: 37 },
 ];
-
-const COLOR_MAP: Record<string, { bg: string; text: string; ring: string }> = {
-  sky: { bg: "bg-sky-50", text: "text-sky-600", ring: "hover:border-sky-200" },
-  cyan: { bg: "bg-cyan-50", text: "text-cyan-600", ring: "hover:border-cyan-200" },
-  emerald: { bg: "bg-emerald-50", text: "text-emerald-600", ring: "hover:border-emerald-200" },
-  amber: { bg: "bg-amber-50", text: "text-amber-600", ring: "hover:border-amber-200" },
-  rose: { bg: "bg-rose-50", text: "text-rose-600", ring: "hover:border-rose-200" },
-};
 
 export default function Dashboard() {
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-            Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Resumen general del sistema · Hoy{" "}
-            {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
-          </p>
-        </div>
-        <button className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition-all hover:-translate-y-0.5 hover:bg-sky-700">
-          <Download size={16} strokeWidth={2.5} /> Exportar resumen
-        </button>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">Dashboard</h1>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">Resumen general del sistema de asistencias</p>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {STATS.map((s) => {
-          const c = COLOR_MAP[s.color];
-          const up = s.trend === "up";
-          return (
-            <div
-              key={s.label}
-              className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${c.ring}`}
-            >
-              <div className="flex items-center justify-between">
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${c.bg} ${c.text}`}>
-                  <s.icon size={21} strokeWidth={2.2} />
-                </div>
-                <span
-                  className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${
-                    up ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-                  }`}
-                >
-                  {up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                  {s.delta}
-                </span>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {STATS.map((s) => (
+          <div
+            key={s.label}
+            className="group relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20"
+          >
+            <div className={`pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-gradient-to-br ${s.color} opacity-[0.07] blur-2xl transition-opacity group-hover:opacity-[0.12]`} />
+            <div className="relative flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">{s.label}</p>
+                <p className="mt-2 text-3xl font-extrabold text-[var(--text-primary)]">{s.value}</p>
               </div>
-              <p className="mt-4 text-3xl font-black tracking-tight text-slate-900">{s.value}</p>
-              <p className="mt-0.5 text-sm font-medium text-slate-500">{s.label}</p>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${s.color} text-[var(--accent-text)] shadow-md`}>
+                <s.icon size={19} />
+              </div>
             </div>
-          );
-        })}
+            <div className="relative mt-3 flex items-center gap-1.5">
+              {s.up ? (
+                <ArrowUpRight size={14} className="text-[var(--success)]" />
+              ) : (
+                <ArrowDownRight size={14} className="text-[var(--success)]" />
+              )}
+              <span className="text-xs font-bold text-[var(--success)]">{s.change}</span>
+              <span className="text-xs text-[var(--text-muted)]">vs. semana anterior</span>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Asistencia semanal */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-          <div className="flex items-center justify-between">
+        {/* Weekly bar chart */}
+        <div className="col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6">
+          <div className="mb-6 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-extrabold text-slate-900">Asistencia semanal</h2>
-              <p className="text-sm text-slate-500">Promedio de presentes por día</p>
+              <h2 className="text-sm font-bold text-[var(--text-primary)]">Asistencia semanal</h2>
+              <p className="text-xs text-[var(--text-muted)]">Presentes vs. ausentes por día</p>
             </div>
-            <School size={20} className="text-slate-300" />
+            <div className="flex items-center gap-4 text-xs">
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[var(--accent)]" /> Presentes</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[var(--border-light)]" /> Ausentes</span>
+            </div>
           </div>
-          <div className="mt-6 flex h-52 items-end justify-between gap-3 sm:gap-5">
-            {WEEK.map((w) => (
-              <div key={w.d} className="flex flex-1 flex-col items-center gap-2">
-                <span className="text-xs font-bold text-slate-700">{w.pct}%</span>
-                <div className="flex w-full flex-1 items-end">
+          <div className="flex items-end gap-4 h-48">
+            {WEEKLY.map((d) => {
+              const total = d.presentes + d.ausentes;
+              const hP = (d.presentes / total) * 100;
+              return (
+                <div key={d.day} className="flex flex-1 flex-col items-center gap-2">
+                  <div className="flex w-full flex-col gap-1" style={{ height: "140px" }}>
+                    <div className="flex-1 flex items-end">
+                      <div className="w-full rounded-t-lg bg-[var(--accent)] opacity-80 transition-all" style={{ height: `${hP}%` }} />
+                    </div>
+                    <div className="flex-1 flex items-end">
+                      <div className="w-full rounded-b-lg bg-[var(--bg-card-hover)] transition-all" style={{ height: `${100 - hP}%` }} />
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold text-[var(--text-muted)]">{d.day}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* By class */}
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6">
+          <h2 className="text-sm font-bold text-[var(--text-primary)]">Por curso</h2>
+          <p className="text-xs text-[var(--text-muted)]">Porcentaje de asistencia</p>
+          <div className="mt-5 space-y-4">
+            {CLASSES.map((c) => (
+              <div key={c.name}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[var(--text-secondary)]">{c.name}</span>
+                  <span className="text-xs font-bold text-[var(--accent)]">{c.asistencia}%</span>
+                </div>
+                <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[var(--bg-card-hover)]">
                   <div
-                    className="w-full rounded-t-lg bg-gradient-to-t from-sky-500 to-cyan-400 transition-all hover:from-sky-600 hover:to-cyan-500"
-                    style={{ height: `${w.pct}%` }}
+                    className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)] transition-all"
+                    style={{ width: `${c.asistencia}%` }}
                   />
                 </div>
-                <span className="text-xs font-medium text-slate-400">{w.d}</span>
               </div>
             ))}
           </div>
         </div>
-
-        {/* Actividad reciente */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-extrabold text-slate-900">Actividad reciente</h2>
-          <p className="text-sm text-slate-500">Últimas novedades</p>
-          <ul className="mt-5 flex flex-col gap-4">
-            {ACTIVITY.map((a, i) => {
-              const c = COLOR_MAP[a.color];
-              return (
-                <li key={i} className="flex items-start gap-3">
-                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${c.bg} ${c.text}`}>
-                    <a.icon size={15} strokeWidth={2.3} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm leading-snug text-slate-700">{a.text}</p>
-                    <p className="text-xs text-slate-400">{a.time}</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
       </div>
 
-      {/* Estado por curso */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div>
-            <h2 className="text-base font-extrabold text-slate-900">Estado por curso</h2>
-            <p className="text-sm text-slate-500">Asistencia de hoy por división</p>
+      {/* Activity feed */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6">
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity size={16} className="text-[var(--accent)]" />
+            <h2 className="text-sm font-bold text-[var(--text-primary)]">Actividad reciente</h2>
           </div>
-          <Link
-            to="/admin/asistencia"
-            className="inline-flex items-center gap-1.5 text-sm font-bold text-sky-600 transition-all hover:gap-2.5"
-          >
-            Ver todo <ArrowRight size={15} strokeWidth={2.5} />
-          </Link>
+          <div className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-input)] px-3 py-1.5 text-xs font-semibold text-[var(--text-muted)]">
+            <CalendarDays size={13} />
+            Hoy
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
-                <th className="px-6 py-3">Curso</th>
-                <th className="px-6 py-3">Presentes</th>
-                <th className="px-6 py-3">Ausentes</th>
-                <th className="px-6 py-3">Tarde</th>
-                <th className="px-6 py-3">Asistencia</th>
-              </tr>
-            </thead>
-            <tbody>
-              {COURSES.map((c) => {
-                const pct = Math.round((c.presentes / c.total) * 100);
-                return (
-                  <tr key={c.curso} className="border-b border-slate-50 transition-colors hover:bg-slate-50/60">
-                    <td className="px-6 py-3.5 font-bold text-slate-800">{c.curso}</td>
-                    <td className="px-6 py-3.5">
-                      <span className="font-semibold text-emerald-600">{c.presentes}</span>
-                      <span className="text-slate-300">/{c.total}</span>
-                    </td>
-                    <td className="px-6 py-3.5 font-semibold text-rose-600">{c.ausentes}</td>
-                    <td className="px-6 py-3.5 font-semibold text-amber-600">{c.tarde}</td>
-                    <td className="px-6 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className={[
-                              "h-full rounded-full",
-                              pct >= 90 ? "bg-emerald-500" : pct >= 80 ? "bg-amber-500" : "bg-rose-500",
-                            ].join(" ")}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-bold text-slate-600">{pct}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="space-y-3">
+          {RECENT_ACTIVITY.map((a, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-4 rounded-xl border border-[var(--border)]/50 bg-[var(--bg-input)]/30 px-4 py-3 transition-colors hover:bg-[var(--bg-input)]/60"
+            >
+              <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                <Clock size={13} />
+                {a.time}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-[var(--text-secondary)]">{a.action}</p>
+                <p className="text-xs text-[var(--text-muted)]">{a.who}</p>
+              </div>
+              {a.type === "success" && <CheckCircle2 size={16} className="text-[var(--success)]" />}
+              {a.type === "warning" && <AlertTriangle size={16} className="text-[var(--warning)]" />}
+              {a.type === "error" && <XCircle size={16} className="text-[var(--error)]" />}
+              {a.type === "info" && <MinusCircle size={16} className="text-[var(--text-muted)]" />}
+            </div>
+          ))}
         </div>
       </div>
     </div>

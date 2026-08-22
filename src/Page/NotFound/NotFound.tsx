@@ -3,41 +3,73 @@ import { Home, ArrowLeft, Compass } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-50 px-4 text-center">
+    <div
+      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 text-center"
+      style={{ backgroundColor: "var(--bg-primary)" }}
+    >
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-24 top-10 h-80 w-80 rounded-full bg-sky-200/40 blur-3xl" />
-        <div className="absolute -right-24 bottom-10 h-80 w-80 rounded-full bg-cyan-200/40 blur-3xl" />
+        <div
+          className="absolute -left-24 top-10 h-80 w-80 rounded-full blur-3xl"
+          style={{ backgroundColor: "var(--accent-glow)" }}
+        />
+        <div
+          className="absolute -right-24 bottom-10 h-80 w-80 rounded-full blur-3xl"
+          style={{ backgroundColor: "var(--accent-glow)", opacity: 0.75 }}
+        />
       </div>
 
       <div className="relative z-10">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-600 to-sky-700 text-white shadow-lg shadow-sky-600/30">
+        <div
+          className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg"
+          style={{
+            background: "linear-gradient(135deg, var(--accent), var(--accent-dark))",
+            color: "var(--accent-text)",
+            boxShadow: "0 10px 15px -3px var(--accent-glow)",
+          }}
+        >
           <Compass size={30} strokeWidth={2.2} />
         </div>
 
         <p
-          className="mt-6 font-extrabold tracking-tight text-slate-900"
-          style={{ fontFamily: "var(--font-display)", fontSize: "clamp(4rem, 12vw, 7rem)" }}
+          className="mt-6 font-extrabold tracking-tight"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "clamp(4rem, 12vw, 7rem)",
+            color: "var(--text-primary)",
+          }}
         >
-          4<span className="bg-gradient-to-r from-sky-600 to-cyan-500 bg-clip-text text-transparent">0</span>4
+          4
+          <span
+            style={{
+              backgroundImage: "linear-gradient(to right, var(--gradient-start), var(--accent))",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+            }}
+          >
+            0
+          </span>
+          4
         </p>
-        <h1 className="mt-2 text-xl font-extrabold tracking-tight text-slate-900">
+        <h1 className="mt-2 text-xl font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>
           Página no encontrada
         </h1>
-        <p className="mt-3 max-w-sm text-sm text-slate-500">
+        <p className="mt-3 max-w-sm text-sm" style={{ color: "var(--text-secondary)" }}>
           La página que buscás no existe o fue movida. Volvé al inicio para
           continuar navegando.
         </p>
 
         <Link
           to="/"
-          className="mt-8 inline-flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition-all hover:-translate-y-0.5 hover:bg-sky-700"
+          className="mt-8 inline-flex items-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-bold shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[var(--accent-hover)]"
+          style={{ color: "var(--accent-text)", boxShadow: "0 10px 15px -3px var(--accent-glow)" }}
         >
           <Home size={16} strokeWidth={2.5} />
           Volver al inicio
         </Link>
         <Link
           to="/especialidades"
-          className="mt-3 ml-2 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition-all hover:-translate-y-0.5 hover:border-sky-300"
+          className="mt-3 ml-2 inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] px-5 py-3 text-sm font-bold text-[var(--text-secondary)] transition-all hover:-translate-y-0.5 hover:border-[var(--accent)]"
         >
           <ArrowLeft size={16} strokeWidth={2.5} />
           Ver especialidades

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import AppRoutes from "../Routes/app.routes";
 import LoadingScreen from "../Components/LoadingScreen/LoadingScreen";
+import SmoothScroll from "../Components/Immersive/SmoothScroll";
+import CursorFollower from "../Components/Microinteractions/CursorFollower";
+import { ThemeProvider } from "../Context/ThemeProvider";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -11,10 +14,13 @@ function App() {
   }, []);
 
   return (
-    <>
-      {loading && <LoadingScreen />}
-      <AppRoutes />
-    </>
+    <ThemeProvider>
+      <SmoothScroll>
+        {loading && <LoadingScreen />}
+        <CursorFollower />
+        <AppRoutes />
+      </SmoothScroll>
+    </ThemeProvider>
   );
 }
 

@@ -1,171 +1,177 @@
+import { useState } from "react";
 import {
-  FileText,
   Download,
-  CalendarDays,
-  BarChart3,
+  Calendar,
+  FileText,
   TrendingUp,
-  TrendingDown,
-  GraduationCap,
   Users,
-  Award,
-  CheckCircle2,
+  Printer,
+  BarChart3,
+  PieChart,
+  Filter,
 } from "lucide-react";
 
 const REPORTS = [
   {
-    title: "Asistencia general",
-    desc: "Resumen mensual de asistencia por curso y división.",
-    icon: CalendarDays,
-    color: "sky",
-    period: "Mensual",
+    id: 1,
+    title: "Asistencia mensual",
+    description: "Reporte completo de asistencia del mes actual por curso",
+    icon: Calendar,
+    date: "Agosto 2026",
+    size: "245 KB",
+    format: "PDF",
   },
   {
-    title: "Rendimiento académico",
-    desc: "Promedios y calificaciones por materia y alumno.",
-    icon: Award,
-    color: "cyan",
-    period: "Trimestral",
-  },
-  {
-    title: "Usuarios registrados",
-    desc: "Listado completo de alumnos, docentes y preceptores.",
+    id: 2,
+    title: "Alumnos con inasistencias recurrentes",
+    description: "Listado de alumnos con 3+ inasistencias en el trimestre",
     icon: Users,
-    color: "emerald",
-    period: "Actual",
+    date: "Trimestre 2",
+    size: "128 KB",
+    format: "PDF",
   },
   {
-    title: "Inasistencias reiteradas",
-    desc: "Alumnos con más de 5 ausencias en el período.",
-    icon: TrendingDown,
-    color: "amber",
-    period: "Mensual",
-  },
-  {
-    title: "Llegadas tarde",
-    desc: "Registro de tardanzas por alumno y curso.",
+    id: 3,
+    title: "Tardanzas por curso",
+    description: "Análisis de tardanzas frecuentes por sección",
     icon: TrendingUp,
-    color: "rose",
-    period: "Semanal",
+    date: "Julio 2026",
+    size: "89 KB",
+    format: "CSV",
   },
   {
-    title: "Boletines digitales",
-    desc: "Generación masiva de boletines en PDF.",
+    id: 4,
+    title: "Resumen anual de asistencia",
+    description: "Estadísticas anuales comparativas de todos los cursos",
+    icon: BarChart3,
+    date: "2025",
+    size: "1.2 MB",
+    format: "PDF",
+  },
+  {
+    id: 5,
+    title: "Distribución de estados",
+    description: "Gráfico de distribución de presentes, ausentes y tardanzas",
+    icon: PieChart,
+    date: "Agosto 2026",
+    size: "67 KB",
+    format: "PNG",
+  },
+  {
+    id: 6,
+    title: "Justificaciones pendientes",
+    description: "Listado de justificaciones que requieren revisión",
     icon: FileText,
-    color: "sky",
-    period: "Trimestral",
+    date: "Esta semana",
+    size: "45 KB",
+    format: "PDF",
   },
 ];
 
-const TOP_CURSOS = [
-  { curso: "1ro B", pct: 96, trend: "up" },
-  { curso: "4to A", pct: 94, trend: "up" },
-  { curso: "1ro A", pct: 93, trend: "up" },
-  { curso: "5to A", pct: 91, trend: "down" },
-  { curso: "6to A", pct: 89, trend: "down" },
-  { curso: "3ro A", pct: 84, trend: "down" },
-];
-
-const COLOR: Record<string, { bg: string; text: string; btn: string }> = {
-  sky: { bg: "bg-sky-50", text: "text-sky-600", btn: "hover:border-sky-300 hover:bg-sky-50" },
-  cyan: { bg: "bg-cyan-50", text: "text-cyan-600", btn: "hover:border-cyan-300 hover:bg-cyan-50" },
-  emerald: { bg: "bg-emerald-50", text: "text-emerald-600", btn: "hover:border-emerald-300 hover:bg-emerald-50" },
-  amber: { bg: "bg-amber-50", text: "text-amber-600", btn: "hover:border-amber-300 hover:bg-amber-50" },
-  rose: { bg: "bg-rose-50", text: "text-rose-600", btn: "hover:border-rose-300 hover:bg-rose-50" },
-};
+const PERIODS = ["Esta semana", "Este mes", "Este trimestre", "Este año", "Personalizado"];
 
 export default function Reportes() {
+  const [period, setPeriod] = useState("Este mes");
+  const [search, setSearch] = useState("");
+
+  const filtered = REPORTS.filter(
+    (r) => r.title.toLowerCase().includes(search.toLowerCase()) || r.description.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Reportes</h1>
-        <p className="mt-1 text-sm text-slate-500">Generá y descargá informes del sistema</p>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">Reportes</h1>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">Generar y exportar reportes de asistencia</p>
+        </div>
+        <div className="flex gap-2">
+          <button className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-input)] px-4 py-2.5 text-sm font-bold text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card-hover)]">
+            <Printer size={16} /> Imprimir
+          </button>
+          <button className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-[var(--accent-text)] shadow-lg shadow-[0_4px_14px_var(--accent-glow)] transition-all hover:-translate-y-0.5 hover:bg-[var(--accent-hover)]">
+            <Download size={16} /> Exportar todo
+          </button>
+        </div>
+      </div>
+
+      {/* Period selector */}
+      <div className="flex flex-wrap gap-2">
+        {PERIODS.map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+            className={`rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+              period === p ? "bg-[var(--accent)] text-[var(--accent-text)]" : "bg-[var(--bg-input)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+            }`}
+          >
+            {p}
+          </button>
+        ))}
       </div>
 
       {/* Quick stats */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: "Asistencia media", value: "92,4%", icon: CheckCircle2, color: "emerald" },
-          { label: "Alumnos evaluados", value: "486", icon: GraduationCap, color: "sky" },
-          { label: "Materias activas", value: "28", icon: BarChart3, color: "cyan" },
-          { label: "Reportes generados", value: "17", icon: FileText, color: "amber" },
-        ].map((s) => {
-          const c = COLOR[s.color];
-          return (
-            <div key={s.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${c.bg} ${c.text}`}>
-                <s.icon size={20} strokeWidth={2.2} />
-              </div>
-              <p className="mt-3 text-2xl font-black tracking-tight text-slate-900">{s.value}</p>
-              <p className="text-sm font-medium text-slate-500">{s.label}</p>
-            </div>
-          );
-        })}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+            <FileText size={16} />
+            <span className="text-xs font-bold uppercase tracking-wider">Reportes generados</span>
+          </div>
+          <p className="mt-2 text-3xl font-extrabold text-[var(--text-primary)]">47</p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">+8 este mes</p>
+        </div>
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+            <Download size={16} />
+            <span className="text-xs font-bold uppercase tracking-wider">Descargas totales</span>
+          </div>
+          <p className="mt-2 text-3xl font-extrabold text-[var(--text-primary)]">182</p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">+23 este mes</p>
+        </div>
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+            <BarChart3 size={16} />
+            <span className="text-xs font-bold uppercase tracking-wider">Asistencia promedio</span>
+          </div>
+          <p className="mt-2 text-3xl font-extrabold text-[var(--text-primary)]">89.3%</p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">+2.1% vs. trimestre anterior</p>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Report cards */}
-        <div className="lg:col-span-2">
-          <h2 className="mb-4 text-base font-extrabold text-slate-900">Informes disponibles</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {REPORTS.map((r) => {
-              const c = COLOR[r.color];
-              return (
-                <div
-                  key={r.title}
-                  className={`group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${c.btn}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${c.bg} ${c.text}`}>
-                      <r.icon size={21} strokeWidth={2.2} />
-                    </div>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                      {r.period}
-                    </span>
-                  </div>
-                  <h3 className="mt-4 text-base font-extrabold text-slate-900">{r.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-500">{r.desc}</p>
-                  <button className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-sky-600 transition-all hover:gap-3">
-                    <Download size={15} strokeWidth={2.5} /> Descargar PDF
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+      {/* Reports list */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]">
+        <div className="flex items-center gap-3 border-b border-[var(--border)] px-5 py-4">
+          <Filter size={16} className="text-[var(--text-muted)]" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar reporte..."
+            className="flex-1 bg-transparent text-sm text-[var(--text-secondary)] outline-none placeholder:text-[var(--text-muted)]"
+          />
         </div>
-
-        {/* Top cursos */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-extrabold text-slate-900">Asistencia por curso</h2>
-          <p className="text-sm text-slate-500">Ranking del período actual</p>
-          <ul className="mt-5 flex flex-col gap-4">
-            {TOP_CURSOS.map((c, i) => (
-              <li key={c.curso}>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
-                      {i + 1}
-                    </span>
-                    {c.curso}
-                  </span>
-                  <span className="flex items-center gap-1.5 text-sm font-black text-slate-800">
-                    {c.pct}%
-                    {c.trend === "up"
-                      ? <TrendingUp size={14} className="text-emerald-500" />
-                      : <TrendingDown size={14} className="text-rose-500" />}
-                  </span>
-                </div>
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className={[
-                      "h-full rounded-full",
-                      c.pct >= 90 ? "bg-emerald-500" : c.pct >= 85 ? "bg-amber-500" : "bg-rose-500",
-                    ].join(" ")}
-                    style={{ width: `${c.pct}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+        <div className="divide-y divide-[var(--border)]">
+          {filtered.map((r) => (
+            <div
+              key={r.id}
+              className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[var(--bg-input)]/30"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-dark)] text-[var(--accent-text)] shadow-md">
+                <r.icon size={19} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-[var(--text-primary)]">{r.title}</p>
+                <p className="text-xs text-[var(--text-muted)] truncate">{r.description}</p>
+              </div>
+              <div className="hidden text-right sm:block">
+                <p className="text-xs font-bold text-[var(--text-muted)]">{r.date}</p>
+                <p className="text-[10px] text-[var(--text-muted)]">{r.size} · {r.format}</p>
+              </div>
+              <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]">
+                <Download size={16} />
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </div>
