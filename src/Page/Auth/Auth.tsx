@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Eye, EyeOff, Mail, Lock, User, X, IdCard } from "lucide-react";
 import { useTheme } from "../../Context/useTheme";
+import { iniciarSesion } from "../../services/sesion";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -12,6 +13,8 @@ export default function Auth() {
   const [showRegister, setShowRegister] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPass, setLoginPass] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginCargando, setLoginCargando] = useState(false);
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPass, setRegPass] = useState("");
@@ -19,6 +22,19 @@ export default function Auth() {
   const [regDniHijo, setRegDniHijo] = useState("");
 
   const close = () => navigate("/");
+
+  const ingresar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    setLoginCargando(true);
+    const sesion = await iniciarSesion(loginEmail, loginPass);
+    setLoginCargando(false);
+    if (!sesion) {
+      setLoginError("Correo o contraseña incorrectos.");
+      return;
+    }
+    navigate(sesion.rango === "qr" ? "/qr" : "/");
+  };
 
   const bgImage =
     theme === "amanecer" ? "/imagen_amanecer.jfif" : "/imagen_anochecer.jfif";
@@ -135,7 +151,7 @@ export default function Auth() {
               </div>
               <h2 className="mb-1 text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Iniciar sesión</h2>
               <p className="mb-6 text-sm" style={{ color: "var(--text-muted)" }}>Ingresá tus credenciales</p>
-              <form onSubmit={(e) => { e.preventDefault(); console.log("Login:", { email: loginEmail, password: loginPass }); }} className="flex flex-col gap-4">
+              <form onSubmit={ingresar} className="flex flex-col gap-4">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold" style={{ color: "var(--text-muted)" }}>CORREO</label>
                   <div className="relative">
@@ -181,15 +197,19 @@ export default function Auth() {
                   </label>
                   <a href="#" className="text-xs font-semibold text-[var(--accent)] transition-colors hover:text-[var(--accent-hover)]">¿Olvidaste tu contraseña?</a>
                 </div>
+                {loginError && (
+                  <p className="-mb-1 text-xs font-semibold" style={{ color: "var(--error)" }}>{loginError}</p>
+                )}
                 <button
                   type="submit"
-                  className="w-full rounded-lg py-2.5 text-sm font-bold transition-all hover:-translate-y-0.5"
+                  disabled={loginCargando}
+                  className="w-full rounded-lg py-2.5 text-sm font-bold transition-all hover:-translate-y-0.5 disabled:opacity-60"
                   style={{
                     background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
                     color: "var(--accent-text)",
                   }}
                 >
-                  Iniciar Sesión
+                  {loginCargando ? "Ingresando..." : "Iniciar Sesión"}
                 </button>
               </form>
             </div>

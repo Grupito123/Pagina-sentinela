@@ -1,15 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { ShieldCheck, Bell, LogIn, UserPlus, Menu, X, Palette, Check } from "lucide-react";
+import { ShieldCheck, Bell, LogIn, LogOut, UserPlus, Menu, X, Palette, Check } from "lucide-react";
 import { useTheme } from "../../Context/useTheme";
 import { THEMES } from "../../Context/themes";
 import type { ThemeId } from "../../Context/ThemeContext";
+import { useSesion, cerrarSesion, tieneRango, type Rango } from "../../services/sesion";
 
-const NAV_LINKS = [
+const NAV_LINKS: { label: string; to: string; rango?: Rango }[] = [
   { label: "Inicio", to: "/" },
   { label: "Especialidades", to: "/especialidades" },
   { label: "Inscripción", to: "/inscripcion" },
-  { label: "Institucional", to: "/institucional" },
+  { label: "QR", to: "/qr", rango: "qr" }, // solo visible para el rango QR
   { label: "Contacto", to: "/contacto" },
 ];
 
@@ -18,6 +19,14 @@ export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
+  const sesion = useSesion();
+  const links = NAV_LINKS.filter((l) => !l.rango || tieneRango(sesion, l.rango));
+
+  const salir = () => {
+    cerrarSesion();
+    setMobileOpen(false);
+    navigate("/");
+  };
   const themeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,7 +62,7 @@ export default function Navbar() {
             </NavLink>
 
             <div className="hidden flex-1 items-center gap-1 md:flex">
-              {NAV_LINKS.map((link) => (
+              {links.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
@@ -134,6 +143,23 @@ export default function Navbar() {
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full ring-2" style={{ backgroundColor: "var(--accent)", boxShadow: `0 0 0 2px var(--bg-primary)` }} />
               </button>
 
+              {sesion ? (
+                <div className="hidden items-center gap-3 sm:flex">
+                  <span className="text-right leading-tight">
+                    <span className="block text-sm font-bold" style={{ color: "var(--text-primary)" }}>{sesion.nombre}</span>
+                    <span className="block text-[11px] font-semibold uppercase" style={{ color: "var(--accent)" }}>Rango {sesion.rango}</span>
+                  </span>
+                  <button
+                    onClick={salir}
+                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all"
+                    style={{ border: "1px solid var(--border-light)", color: "var(--text-secondary)" }}
+                  >
+                    <LogOut size={16} />
+                    Cerrar sesión
+                  </button>
+                </div>
+              ) : (
+              <>
               <button
                 onClick={() => navigate("/login")}
                 className="hidden items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:inline-flex"
@@ -153,6 +179,8 @@ export default function Navbar() {
                 <UserPlus size={16} />
                 Registrarse
               </button>
+              </>
+              )}
 
               <button
                 className="flex h-10 w-10 items-center justify-center rounded-xl transition-colors md:hidden"
@@ -169,7 +197,7 @@ export default function Navbar() {
         {mobileOpen && (
           <div className="border-t px-5 pb-4 pt-2 md:hidden" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-primary)" }}>
             <div className="flex flex-col gap-1">
-              {NAV_LINKS.map((link) => (
+              {links.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
@@ -186,6 +214,22 @@ export default function Navbar() {
               ))}
             </div>
             <div className="mt-3 flex flex-col gap-2">
+              {sesion ? (
+                <>
+                  <p className="px-4 text-xs" style={{ color: "var(--text-muted)" }}>
+                    Sesión: <span className="font-bold" style={{ color: "var(--text-primary)" }}>{sesion.nombre}</span> · rango {sesion.rango}
+                  </p>
+                  <button
+                    onClick={salir}
+                    className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+                    style={{ border: "1px solid var(--border-light)", color: "var(--text-secondary)" }}
+                  >
+                    <LogOut size={16} />
+                    Cerrar sesión
+                  </button>
+                </>
+              ) : (
+              <>
               <button
                 onClick={() => { setMobileOpen(false); navigate("/login"); }}
                 className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
@@ -202,6 +246,8 @@ export default function Navbar() {
                 <UserPlus size={16} />
                 Registrarse
               </button>
+              </>
+              )}
             </div>
           </div>
         )}

@@ -5,6 +5,9 @@ import Especialidades from "../Page/Especialidades/Especialidades";
 import Inscripcion from "../Page/Inscripcion/Inscripcion";
 import Contacto from "../Page/Contacto/Contacto";
 import NotFound from "../Page/NotFound/NotFound";
+import QR from "../Page/QR/QR";
+import MarcarAsistencia from "../Page/QR/MarcarAsistencia";
+import RutaConRango from "../Components/RutaConRango/RutaConRango";
 import Navbar from "../Components/Navbar/Navbar";
 import Footer from "../Components/Footer/Footer";
 import AdminLayout from "../Page/Admin/AdminLayout";
@@ -63,6 +66,31 @@ export default function AppRoutes() {
                 <Contacto />
               </main>
               <Footer />
+            </div>
+          }
+        />
+        <Route
+          path="/qr"
+          element={
+            <div className="min-h-screen bg-[#0a0a0a]">
+              <Navbar />
+              <main>
+                <RutaConRango rango="qr">
+                  <QR />
+                </RutaConRango>
+              </main>
+              <Footer />
+            </div>
+          }
+        />
+        <Route
+          path="/qr/marcar"
+          element={
+            <div className="min-h-screen bg-[#0a0a0a]">
+              <Navbar />
+              <main>
+                <MarcarAsistencia />
+              </main>
             </div>
           }
         />
