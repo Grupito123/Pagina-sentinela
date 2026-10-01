@@ -4,6 +4,7 @@ import LoadingScreen from "../Components/LoadingScreen/LoadingScreen";
 import SmoothScroll from "../Components/Immersive/SmoothScroll";
 import CursorFollower from "../Components/Microinteractions/CursorFollower";
 import { ThemeProvider } from "../Context/ThemeProvider";
+import { AuthProvider } from "../Context/AuthProvider";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -15,11 +16,13 @@ function App() {
 
   return (
     <ThemeProvider>
-      <SmoothScroll>
-        {loading && <LoadingScreen />}
-        <CursorFollower />
-        <AppRoutes />
-      </SmoothScroll>
+      <AuthProvider>
+        <SmoothScroll>
+          {loading && <LoadingScreen />}
+          <CursorFollower />
+          <AppRoutes />
+        </SmoothScroll>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

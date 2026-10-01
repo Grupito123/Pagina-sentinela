@@ -5,7 +5,6 @@ const LINKS = [
   { label: "Inicio", to: "/" },
   { label: "Especialidades", to: "/especialidades" },
   { label: "Inscripción", to: "/inscripcion" },
-  { label: "Institucional", to: "/institucional" },
   { label: "Contacto", to: "/contacto" },
 ];
 
