@@ -2,32 +2,39 @@ import { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { ShieldCheck, Bell, LogIn, LogOut, UserPlus, Menu, X, Palette, Check } from "lucide-react";
 import { useTheme } from "../../Context/useTheme";
+import { useAuth } from "../../Context/useAuth";
 import { THEMES } from "../../Context/themes";
 import type { ThemeId } from "../../Context/ThemeContext";
-import { useSesion, cerrarSesion, tieneRango, type Rango } from "../../services/sesion";
+import { ROLES, type Rol } from "../../Firebase/roles";
 
-const NAV_LINKS: { label: string; to: string; rango?: Rango }[] = [
+/**
+ * `roles` limita el link a esos roles de `usuarios/{uid}.rol`.
+ * Sin `roles`, el link es público. La autorización real la aplican las
+ * reglas de Firestore; esto solo evita mostrar lo que no corresponde.
+ */
+const NAV_LINKS: { label: string; to: string; roles?: Rol[] }[] = [
   { label: "Inicio", to: "/" },
   { label: "Especialidades", to: "/especialidades" },
   { label: "Inscripción", to: "/inscripcion" },
-  { label: "QR", to: "/qr", rango: "qr" }, // solo visible para el rango QR
+  {
+    label: "QR",
+    to: "/qr",
+    roles: [ROLES.PRECEPTOR, ROLES.PROFESOR, ROLES.DIRECTIVO, ROLES.ADMIN],
+  },
   { label: "Contacto", to: "/contacto" },
 ];
 
 export default function Navbar() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { user, perfil, displayName, initials, photoURL, signOutUser } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
-  const sesion = useSesion();
-  const links = NAV_LINKS.filter((l) => !l.rango || tieneRango(sesion, l.rango));
-
-  const salir = () => {
-    cerrarSesion();
-    setMobileOpen(false);
-    navigate("/");
-  };
   const themeRef = useRef<HTMLDivElement>(null);
+
+  const links = NAV_LINKS.filter(
+    (link) => !link.roles || (!!perfil && link.roles.includes(perfil.rol as Rol)),
+  );
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -143,43 +150,59 @@ export default function Navbar() {
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full ring-2" style={{ backgroundColor: "var(--accent)", boxShadow: `0 0 0 2px var(--bg-primary)` }} />
               </button>
 
-              {sesion ? (
-                <div className="hidden items-center gap-3 sm:flex">
-                  <span className="text-right leading-tight">
-                    <span className="block text-sm font-bold" style={{ color: "var(--text-primary)" }}>{sesion.nombre}</span>
-                    <span className="block text-[11px] font-semibold uppercase" style={{ color: "var(--accent)" }}>Rango {sesion.rango}</span>
+              {user ? (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-xs font-black text-white shadow-lg"
+                    style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-dark))", boxShadow: "0 4px 14px var(--accent-glow)" }}
+                    aria-hidden="true"
+                  >
+                    {photoURL ? (
+                      <img src={photoURL} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      initials
+                    )}
+                  </div>
+                  <span
+                    className="hidden max-w-[12rem] truncate text-sm font-semibold lg:block"
+                    style={{ color: "var(--text-primary)" }}
+                    title={displayName}
+                  >
+                    {displayName}
                   </span>
                   <button
-                    onClick={salir}
-                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all"
-                    style={{ border: "1px solid var(--border-light)", color: "var(--text-secondary)" }}
+                    onClick={() => signOutUser()}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl transition-colors"
+                    style={{ color: "var(--text-secondary)" }}
+                    aria-label="Cerrar sesión"
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
                   >
-                    <LogOut size={16} />
-                    Cerrar sesión
+                    <LogOut size={18} />
                   </button>
                 </div>
               ) : (
-              <>
-              <button
-                onClick={() => navigate("/login")}
-                className="hidden items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:inline-flex"
-                style={{ border: "1px solid var(--border-light)", color: "var(--text-secondary)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-light)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-              >
-                <LogIn size={16} />
-                Iniciar sesión
-              </button>
+                <>
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="hidden items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:inline-flex"
+                    style={{ border: "1px solid var(--border-light)", color: "var(--text-secondary)" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-light)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+                  >
+                    <LogIn size={16} />
+                    Iniciar sesión
+                  </button>
 
-              <button
-                onClick={() => navigate("/registro")}
-                className="hidden items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all hover:-translate-y-0.5 sm:inline-flex"
-                style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-dark))", color: "var(--accent-text)", boxShadow: "0 4px 14px var(--accent-glow)" }}
-              >
-                <UserPlus size={16} />
-                Registrarse
-              </button>
-              </>
+                  <button
+                    onClick={() => navigate("/registro")}
+                    className="hidden items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all hover:-translate-y-0.5 sm:inline-flex"
+                    style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-dark))", color: "var(--accent-text)", boxShadow: "0 4px 14px var(--accent-glow)" }}
+                  >
+                    <UserPlus size={16} />
+                    Registrarse
+                  </button>
+                </>
               )}
 
               <button
@@ -214,13 +237,29 @@ export default function Navbar() {
               ))}
             </div>
             <div className="mt-3 flex flex-col gap-2">
-              {sesion ? (
+              {user ? (
                 <>
-                  <p className="px-4 text-xs" style={{ color: "var(--text-muted)" }}>
-                    Sesión: <span className="font-bold" style={{ color: "var(--text-primary)" }}>{sesion.nombre}</span> · rango {sesion.rango}
-                  </p>
+                  <div
+                    className="flex items-center gap-3 rounded-xl px-4 py-2.5"
+                    style={{ background: "var(--bg-secondary)" }}
+                  >
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[11px] font-black text-white"
+                      style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-dark))" }}
+                      aria-hidden="true"
+                    >
+                      {photoURL ? (
+                        <img src={photoURL} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        initials
+                      )}
+                    </div>
+                    <span className="flex-1 truncate text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                      {displayName}
+                    </span>
+                  </div>
                   <button
-                    onClick={salir}
+                    onClick={() => { setMobileOpen(false); signOutUser(); }}
                     className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
                     style={{ border: "1px solid var(--border-light)", color: "var(--text-secondary)" }}
                   >
@@ -229,24 +268,24 @@ export default function Navbar() {
                   </button>
                 </>
               ) : (
-              <>
-              <button
-                onClick={() => { setMobileOpen(false); navigate("/login"); }}
-                className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
-                style={{ border: "1px solid var(--border-light)", color: "var(--text-secondary)" }}
-              >
-                <LogIn size={16} />
-                Iniciar sesión
-              </button>
-              <button
-                onClick={() => { setMobileOpen(false); navigate("/registro"); }}
-                className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
-                style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-dark))", color: "var(--accent-text)" }}
-              >
-                <UserPlus size={16} />
-                Registrarse
-              </button>
-              </>
+                <>
+                  <button
+                    onClick={() => { setMobileOpen(false); navigate("/login"); }}
+                    className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+                    style={{ border: "1px solid var(--border-light)", color: "var(--text-secondary)" }}
+                  >
+                    <LogIn size={16} />
+                    Iniciar sesión
+                  </button>
+                  <button
+                    onClick={() => { setMobileOpen(false); navigate("/registro"); }}
+                    className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+                    style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-dark))", color: "var(--accent-text)" }}
+                  >
+                    <UserPlus size={16} />
+                    Registrarse
+                  </button>
+                </>
               )}
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import {
   QrCode,
@@ -17,10 +17,7 @@ import {
 } from "lucide-react";
 import {
   ROTACION_MS,
-  KEYS_STORAGE,
   CONFIG_DEFAULT,
-  codigoDelPeriodo,
-  periodoActual,
   msHastaProximoCambio,
   situacionActual,
   aperturaDe,
@@ -30,14 +27,23 @@ import {
   leerConfig,
   guardarConfig,
   configEsValida,
-  marcasDeHoy,
-  borrarMarcasDeHoy,
+  hoy,
   type ConfigHorario,
   type HoraClase,
   type SituacionActual,
   type EstadoHorario,
-  type Marca,
 } from "../../services/qrAsistencia";
+import { useAuth } from "../../Context/useAuth";
+import type { Rol } from "../../Firebase/roles";
+import { obtenerCursosOperables, type Curso } from "../../services/cursos";
+import {
+  crearSesionQr,
+  obtenerSesionesActivas,
+  rotarCodigoSesion,
+  cerrarSesionQr,
+  type SesionQR,
+} from "../../services/qrSessions";
+import { ESTADOS, formatTime as formatHora, obtenerAsistenciasPorCurso, type Asistencia } from "../../services/asistencia";
 
 const ESTILO: Record<EstadoHorario, { color: string; bg: string; icon: typeof Clock }> = {
   antes: { color: "var(--info)", bg: "var(--info-bg)", icon: Coffee },
@@ -81,14 +87,22 @@ function useAhora(intervalo = 250) {
 
 export default function QR() {
   const ahora = useAhora();
+  const { user, perfil } = useAuth();
   const [config, setConfig] = useState<ConfigHorario>(leerConfig);
   const [borrador, setBorrador] = useState<ConfigHorario>(config);
   const [editando, setEditando] = useState(false);
-  const [marcas, setMarcas] = useState<Marca[]>(marcasDeHoy);
+  const [marcas, setMarcas] = useState<Asistencia[]>([]);
 
-  const periodo = periodoActual(ahora);
-  const codigo = useMemo(() => codigoDelPeriodo(periodo), [periodo]);
-  const url = `${window.location.origin}/qr/marcar?c=${codigo}`;
+  const [cursos, setCursos] = useState<Curso[]>([]);
+  const [cursoId, setCursoId] = useState<string>("");
+  const [sesion, setSesion] = useState<SesionQR | null>(null);
+  const [codigo, setCodigo] = useState<string>("");
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  const sesionActual = cursoId ? sesion : null;
+  const url = sesionActual
+    ? `${window.location.origin}/qr/marcar?s=${sesionActual.id}&c=${codigo}`
+    : "";
   const restante = msHastaProximoCambio(ahora);
   const segundos = Math.ceil(restante / 1000);
   const sit = situacionActual(config, new Date(ahora));
@@ -96,20 +110,74 @@ export default function QR() {
   const estilo = ESTILO[sit.estado];
   const txt = textos(sit, config);
   const EstadoIcon = estilo.icon;
-  const esLocalhost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
-  // Refresca la lista cuando se marca desde otra pestaña del mismo navegador (modo demo)
+  const presentes = marcas.filter((m) => m.estado === ESTADOS.PRESENTE).length;
+  const llegadaTarde = marcas.length - presentes;
+
+  // Cursos que este usuario puede operar según su rol de `usuarios/{uid}`.
   useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === KEYS_STORAGE.marcas) setMarcas(marcasDeHoy());
-    };
-    window.addEventListener("storage", onStorage);
-    const id = setInterval(() => setMarcas(marcasDeHoy()), 5000);
+    let vivo = true;
+    if (!user || !perfil) return;
+    obtenerCursosOperables(user.uid, perfil.rol as Rol)
+      .then((lista) => {
+        if (!vivo) return;
+        setCursos(lista);
+        setCursoId((prev) => prev || lista[0]?.id || "");
+      })
+      .catch(() => setAviso("No pudimos leer los cursos. Revisá los permisos de tu cuenta."));
     return () => {
-      window.removeEventListener("storage", onStorage);
-      clearInterval(id);
+      vivo = false;
     };
-  }, []);
+  }, [user, perfil]);
+
+  // Sesión QR abierta para el curso elegido: se reutiliza si sigue vigente.
+  useEffect(() => {
+    let vivo = true;
+    if (!user || !cursoId) return;
+    (async () => {
+      try {
+        const hoyKey = hoy();
+        const [activas] = await Promise.all([obtenerSesionesActivas(cursoId)]);
+        const reutilizable =
+          activas.find((s) => s.fechaKey === hoyKey && (s.horaFin?.toMillis() ?? 0) > Date.now()) ?? null;
+        const s = reutilizable ?? (await crearSesionQr({ cursoId, creadoPor: user.uid, duracionMinutos: 240 }));
+        if (!vivo) return;
+        setSesion(s);
+        setCodigo(s.codigo);
+      } catch {
+        if (vivo) {
+          setAviso("No pudimos abrir la sesión QR. Las reglas de la base pueden estar limitando esta acción.");
+        }
+      }
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [user, cursoId]);
+
+  // Rotación del código: el valor vive en `sesionesQR`, no en el navegador.
+  useEffect(() => {
+    const s = sesionActual;
+    if (!s) return;
+    const id = setInterval(() => {
+      rotarCodigoSesion(s.id)
+        .then((nuevo) => setCodigo(nuevo))
+        .catch(() => undefined);
+    }, ROTACION_MS);
+    return () => clearInterval(id);
+  }, [sesionActual]);
+
+  // Marcas del día para el curso abierto.
+  useEffect(() => {
+    if (!cursoId) return;
+    const cargar = () =>
+      obtenerAsistenciasPorCurso(cursoId)
+        .then(setMarcas)
+        .catch(() => undefined);
+    cargar();
+    const id = setInterval(cargar, 15_000);
+    return () => clearInterval(id);
+  }, [cursoId]);
 
   const guardar = () => {
     if (!configEsValida(borrador)) return;
@@ -127,8 +195,6 @@ export default function QR() {
     else document.exitFullscreen?.();
   };
 
-  const presentes = marcas.filter((m) => m.estado === "presente").length;
-  const mediasFaltas = marcas.length - presentes;
   const modulos = [...new Set(config.horas.map((h) => h.modulo))];
 
   return (
@@ -302,40 +368,64 @@ export default function QR() {
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider" style={{ color: "var(--accent)" }}>
                   <Users size={14} strokeWidth={2.5} /> Marcaron hoy
                 </p>
-                {marcas.length > 0 && (
+                {sesionActual?.activo && (
                   <button
-                    onClick={() => { if (confirm("¿Borrar todas las marcas de hoy?")) { borrarMarcasDeHoy(); setMarcas([]); } }}
+                    onClick={() => {
+                      const s = sesionActual;
+                      if (confirm("¿Cerrar la sesión QR? Los alumnos dejarán poder marcar asistencia.")) {
+                        cerrarSesionQr(s.id).then(() => setSesion({ ...s, activo: false }));
+                      }
+                    }}
                     className="flex h-7 w-7 items-center justify-center rounded-lg"
                     style={{ color: "var(--text-muted)" }}
-                    aria-label="Borrar marcas de hoy"
-                    title="Borrar marcas de hoy"
+                    aria-label="Cerrar sesión QR"
+                    title="Cerrar sesión QR"
                   >
                     <Trash2 size={14} />
                   </button>
                 )}
               </div>
+              {cursos.length > 1 && (
+                <select
+                  value={cursoId}
+                  onChange={(e) => setCursoId(e.target.value)}
+                  className="mt-3 w-full appearance-none rounded-xl px-3 py-2 text-sm font-semibold"
+                  style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                >
+                  {cursos.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {aviso && (
+                <p className="mt-3 rounded-xl px-3 py-2 text-xs" style={{ backgroundColor: "var(--error-bg)", color: "var(--error)" }}>
+                  {aviso}
+                </p>
+              )}
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl p-3 text-center" style={{ backgroundColor: "var(--success-bg)" }}>
                   <p className="text-2xl font-extrabold" style={{ color: "var(--success)" }}>{presentes}</p>
                   <p className="text-[11px] font-bold uppercase" style={{ color: "var(--text-muted)" }}>Presentes</p>
                 </div>
                 <div className="rounded-2xl p-3 text-center" style={{ backgroundColor: "var(--warning-bg)" }}>
-                  <p className="text-2xl font-extrabold" style={{ color: "var(--warning)" }}>{mediasFaltas}</p>
-                  <p className="text-[11px] font-bold uppercase" style={{ color: "var(--text-muted)" }}>Media falta</p>
+                  <p className="text-2xl font-extrabold" style={{ color: "var(--warning)" }}>{llegadaTarde}</p>
+                  <p className="text-[11px] font-bold uppercase" style={{ color: "var(--text-muted)" }}>Llegada tarde</p>
                 </div>
               </div>
               {marcas.length === 0 ? (
                 <p className="mt-5 text-center text-sm" style={{ color: "var(--text-muted)" }}>Todavía nadie marcó asistencia.</p>
               ) : (
                 <ul className="mt-4 flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
-                  {[...marcas].reverse().map((m) => (
+                  {marcas.map((m) => (
                     <li key={m.id} className="flex items-center justify-between gap-3 rounded-xl px-3 py-2" style={{ backgroundColor: "var(--bg-tertiary)" }}>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-bold" style={{ color: "var(--text-primary)" }}>{m.nombre}</p>
-                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>{m.curso} · {m.horaClase} · {m.hora}</p>
+                        <p className="truncate text-sm font-bold" style={{ color: "var(--text-primary)" }}>{m.alumnoId}</p>
+                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>{m.cursoId} · {formatHora(m.hora)}</p>
                       </div>
-                      <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold" style={{ color: m.estado === "presente" ? "var(--success)" : "var(--warning)", backgroundColor: m.estado === "presente" ? "var(--success-bg)" : "var(--warning-bg)" }}>
-                        {m.estado === "presente" ? "Presente" : "Media falta"}
+                      <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold" style={{ color: m.estado === ESTADOS.PRESENTE ? "var(--success)" : "var(--warning)", backgroundColor: m.estado === ESTADOS.PRESENTE ? "var(--success-bg)" : "var(--warning-bg)" }}>
+                        {m.estado === ESTADOS.PRESENTE ? "Presente" : "Llegada tarde"}
                       </span>
                     </li>
                   ))}
@@ -346,8 +436,7 @@ export default function QR() {
             <p className="flex gap-2 text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
               <Info size={14} className="mt-0.5 shrink-0" />
               <span>
-                Modo prueba: las asistencias se guardan solo en este navegador hasta conectar la base de datos.
-                {esLocalhost && " Para escanear desde un celular, abrí esta página con la dirección de red de la computadora (no \"localhost\")."}
+                Las asistencias se guardan en Firestore (`asistencias`) y quedan disponibles para el resto de la institución.
               </span>
             </p>
           </aside>

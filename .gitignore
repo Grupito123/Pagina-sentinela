@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Credenciales: nunca deben versionarse
+*service-account*.json
+*-sa.json
+application_default_credentials.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

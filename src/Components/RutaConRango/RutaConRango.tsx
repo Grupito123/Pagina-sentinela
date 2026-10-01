@@ -1,14 +1,41 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, LogIn } from "lucide-react";
-import { useSesion, tieneRango, type Rango } from "../../services/sesion";
+import { useAuth } from "../../Context/useAuth";
+import type { Rol } from "../../Firebase/roles";
 
-/** Muestra el contenido solo a quien tenga el rango pedido; al resto, un aviso de acceso restringido. */
-export default function RutaConRango({ rango, children }: { rango: Rango; children: ReactNode }) {
-  const sesion = useSesion();
+/**
+ * Muestra el contenido solo a quien tenga alguno de los roles indicados.
+ *
+ * La fuente de verdad es el perfil resuelto por `AuthProvider`, que lo busca en
+ * `usuarios/{uid}`, y si no existe en `alumnos/{uid}` o `padres/{uid}` (registro
+ * por coleccion). Esto evita mostrar secciones que no corresponden; la
+ * autorización real la aplican las reglas de Firestore, no este componente.
+ */
+export default function RutaConRango({ roles, children }: { roles: Rol[]; children: ReactNode }) {
+  const { user, perfil, loading, signOutUser } = useAuth();
   const navigate = useNavigate();
 
-  if (tieneRango(sesion, rango)) return <>{children}</>;
+  // Mientras se resuelve la sesión todavía no se puede decidir: negar acá
+  // mostraría un "Acceso restringido" antes de tiempo.
+  if (loading) {
+    return (
+      <section className="flex min-h-[calc(100vh-4rem)] w-full items-center justify-center px-5 py-16">
+        <p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>
+          Verificando tu sesión...
+        </p>
+      </section>
+    );
+  }
+
+  if (user && perfil && roles.includes(perfil.rol as Rol)) return <>{children}</>;
+
+  const nombres = roles.join(" o ");
+  const motivo = !user
+    ? <>Esta sección es solo para cuentas con rol <span className="font-bold uppercase">{nombres}</span>. Iniciá sesión para continuar.</>
+    : perfil
+      ? <>Tu cuenta (<span className="font-bold">{`${perfil.nombre} ${perfil.apellido}`.trim() || perfil.email}</span>) tiene el rol <span className="font-bold uppercase">{perfil.rol || "sin asignar"}</span> y esta sección es solo para <span className="font-bold uppercase">{nombres}</span>.</>
+      : <>Tu cuenta está autenticada, pero aún no tiene un perfil válido para acceder a esta sección (podría haberse creado recién por registro público). Cerrá sesión e iniciá sesión nuevamente, o contactá a la administración.</>;
 
   return (
     <section className="flex min-h-[calc(100vh-4rem)] w-full items-center justify-center px-5 py-16" style={{ background: "linear-gradient(to bottom, var(--bg-secondary), var(--bg-primary))" }}>
@@ -22,17 +49,24 @@ export default function RutaConRango({ rango, children }: { rango: Rango; childr
             Acceso restringido
           </h1>
           <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-            {sesion
-              ? <>Tu cuenta (<span className="font-bold">{sesion.nombre}</span>) no tiene el rango <span className="font-bold uppercase">{rango}</span> necesario para esta sección.</>
-              : <>Esta sección es solo para cuentas con rango <span className="font-bold uppercase">{rango}</span>. Iniciá sesión para continuar.</>}
+            {motivo}
           </p>
-          {!sesion && (
+          {!user && (
             <button
               onClick={() => navigate("/login")}
               className="mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition-all hover:-translate-y-0.5"
               style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-dark))", color: "var(--accent-text)", boxShadow: "0 4px 14px var(--accent-glow)" }}
             >
               <LogIn size={16} /> Iniciar sesión
+            </button>
+          )}
+          {user && !perfil && (
+            <button
+              onClick={() => void signOutUser()}
+              className="mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition-all hover:-translate-y-0.5"
+              style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-dark))", color: "var(--accent-text)", boxShadow: "0 4px 14px var(--accent-glow)" }}
+            >
+              <LogIn size={16} /> Cerrar sesión
             </button>
           )}
         </div>
